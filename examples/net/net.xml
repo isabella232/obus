@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<bus name="net">
+	<!-- objects declaration -->
+	<object uid="1" name="interface" desc="network interface object">
+		<!-- object enumerations declaration -->
+		<enum name="state" default="down" desc="interface state">
+			<label name="up" value="1" desc="interface is activated"/>
+			<label name="down" value="-3" desc="interface is not activated"/>
+		</enum>
+		<!-- object properties declaration -->
+		<property uid="1" name="name" type="string" desc="interface name (ex: 'eth0')"/>
+		<property uid="2" name="state" type="enum:state" desc="current interface state"/>
+		<property uid="3" name="hw_addr" type="string" desc="interface hardware address"/>
+		<property uid="4" name="ip_addr" type="string" desc="interface ip address"/>
+		<property uid="5" name="broadcast" type="string" desc="interface broadcast address"/>
+		<property uid="6" name="netmask" type="string" desc="interface netmask"/>
+		<property uid="7" name="bytes" type="array:uint64" desc="number of bytes sent and received"/>
+		<!-- object methods declaration -->
+		<method uid="8" name="up" desc="activate network interface">
+			<arg uid="1" name="ip_addr" type="string" desc="optional ip address to be used by interface"/>
+			<arg uid="2" name="netmask" type="string" desc="optional netmask to be used by interface"/>
+		</method>
+		<method uid="9" name="down" desc="deactivate network interface"/>
+		<!-- object events declaration -->
+		<event uid="1" name="up" desc="interface is activated">
+			<update property="state"/>
+			<update method="up"/>
+			<update method="down"/>
+			<update property="hw_addr"/>
+			<update property="ip_addr"/>
+			<update property="broadcast"/>
+			<update property="netmask"/>
+		</event>
+		<event uid="2" name="down" desc="interface is deactivated">
+			<update property="state"/>
+			<update method="up"/>
+			<update method="down"/>
+			<update property="hw_addr"/>
+			<update property="ip_addr"/>
+			<update property="broadcast"/>
+			<update property="netmask"/>
+		</event>
+		<event uid="3" name="configured" desc="interface is configured">
+			<update property="hw_addr"/>
+			<update property="ip_addr"/>
+			<update property="broadcast"/>
+			<update property="netmask"/>
+		</event>
+		<event uid="4" name="traffic" desc="interface sent and received bytes updated">
+			<update property="bytes"/>
+		</event>
+		<event uid="5" name="up_failed" desc="interface method up failed"/>
+		<event uid="6" name="down_failed" desc="interface method down failed"/>
+	</object>
+	<!-- bus event declaration 1 to 9 reserved -->
+	<event uid="10" name="scan_completed" desc="network system scan completed"/>
+</bus>

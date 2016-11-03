@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">ObusTestPs</string>
+    <string name="state_connected">Connected</string>
+    <string name="summary">Summary</string>
+
+</resources>

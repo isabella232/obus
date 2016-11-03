@@ -1,0 +1,33 @@
+rootProject.ext['commonConfiguration'] = { project ->
+    // -- define artifacts to publish --
+    project.repositories {
+        if (!rootProject.hasProperty('notInParrot')) {
+            ivy {
+                url "http://phoenix.parrot.biz:1185/artifactory/parrotIvyCentral"
+                layout "maven"
+            }
+            maven {
+                url "http://phoenix.parrot.biz:1185/artifactory/parrotMavenCentral"
+            }
+        }
+        jcenter()
+        mavenCentral()
+    }
+
+    project.configurations {
+        publics
+        privates
+        packages
+        libSdks
+        demoSdks
+    }
+
+    if (rootProject.hasProperty('buildDirectory')) {
+        if (file(rootProject.buildDirectory).isAbsolute()) {
+            project.buildDir = "${rootProject.buildDirectory}/${project.name}"
+        } else { // If relative, means that current project's buildDir will also be relative to itself.
+            project.buildDir = "${rootProject.buildDirectory}"
+        }
+        logger.info("settings ${project.name} buildDir to ${project.buildDir}")
+    }
+}

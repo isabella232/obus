@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<bus name="ps">
+	<!-- objects declaration -->
+	<object uid="1" name="process" desc="Process object">
+		<!-- enumerations declaration -->
+		<enum name="state" default="unknown" desc="Process state">
+			<label name="unknown" value="-1" desc="Unknown"/>
+			<label name="running" value="0" desc="Running"/>
+			<label name="sleeping" value="1" desc="Sleeping"/>
+			<label name="stopped" value="2" desc="Stopped"/>
+			<label name="zombie" value="3" desc="Zombie"/>
+		</enum>
+
+		<!-- properties declaration -->
+		<property uid="1" name="pid" type="uint32" desc="Process id"/>
+		<property uid="2" name="ppid" type="uint32" desc="Parrent process id"/>
+		<property uid="3" name="name" type="string" desc="Process name"/>
+		<property uid="4" name="exe" type="string" desc="Excutable name"/>
+		<property uid="5" name="pcpu" type="float" desc="Cpu usage in percent"/>
+		<property uid="6" name="state" type="enum:state" desc="State"/>
+
+		<!-- methods declaration -->
+
+		<!-- events declaration -->
+		<event uid="1" name="updated" desc="Process info updated">
+			<update property="ppid"/>
+			<update property="name"/>
+			<update property="exe"/>
+			<update property="pcpu"/>
+			<update property="state"/>
+		</event>
+	</object>
+
+	<object uid="2" name="summary" desc="Global system information">
+		<!-- enumerations declaration -->
+		<enum name="mode" default="irix" desc="PCPU mode">
+			<label name="solaris" value="0" desc="PCPU of a process can never go above 100 event if SMP"/>
+			<label name="irix" value="1" desc="PCPU can go up to ncpus * 100"/>
+		</enum>
+
+		<!-- properties declaration -->
+		<property uid="1" name="pcpus" type="array:float" desc="Cpu usage in percent for each cpu"/>
+		<property uid="2" name="task_total" type="uint32" desc="Total number of tasks (processes)"/>
+		<property uid="3" name="task_running" type="uint32" desc="Total number of running tasks"/>
+		<property uid="4" name="task_sleeping" type="uint32" desc="Total number of sleeping tasks"/>
+		<property uid="5" name="task_stopped" type="uint32" desc="Total number of stopped tasks"/>
+		<property uid="6" name="task_zombie" type="uint32" desc="Total number of zombie tasks"/>
+		<property uid="7" name="refresh_rate" type="uint32" desc="Refresh rate in seconds"/>
+		<property uid="8" name="mode" type="enum:mode" desc="Mode for PCPU"/>
+
+		<!-- methods declaration -->
+		<method name="set_refresh_rate" uid="101" desc="Set the refresh rate">
+			<arg uid="1" name="refresh_rate" type="uint32" desc="Refresh rate in seconds"/>
+		</method>
+
+		<!-- methods declaration -->
+		<method name="set_mode" uid="102" desc="Set the mode for PCPU">
+			<arg uid="1" name="mode" type="enum:mode" desc="Mode"/>
+		</method>
+
+		<!-- events declaration -->
+		<event uid="1" name="updated" desc="Process summary info updated">
+			<update property="pcpus"/>
+			<update property="task_total"/>
+			<update property="task_running"/>
+			<update property="task_sleeping"/>
+			<update property="task_stopped"/>
+			<update property="task_zombie"/>
+		</event>
+
+		<event uid="2" name="refresh_rate_changed" desc="Refresh rate has been changed">
+			<update property="refresh_rate"/>
+		</event>
+
+		<event uid="3" name="mode_changed" desc="Mode has been changed">
+			<update property="mode"/>
+		</event>
+
+	</object>
+
+	<!-- bus event declaration 1 to 9 reserved -->
+	<event uid="10" name="updated" desc="System processes global update"/>
+</bus>

@@ -1,0 +1,10 @@
+rootProject.ext['deployConfiguration'] = {
+    project.ext['isSdkProject'] = {}
+    project.ext['isPackageProject'] = {}
+    project.ext['isDemoProject'] = {}
+    project.ext['isLibProject'] = {}
+}
+rootProject.ext['docConfiguration'] = {
+    project.ext['hasPublicDoc'] = { packages ->}
+    project.ext['isSampleDoc'] = {}
+}

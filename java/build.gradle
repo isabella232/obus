@@ -1,0 +1,97 @@
+import org.gradle.api.internal.artifacts.publish.DefaultPublishArtifact
+
+// -- rootProject Part --
+buildscript {
+    repositories {
+        if (! rootProject.hasProperty('notInParrot')) {
+            ivy {
+                url "http://phoenix.parrot.biz:1185/artifactory/parrotIvyCentral"
+                layout "maven"
+            }
+            maven {
+                url "http://phoenix.parrot.biz:1185/artifactory/parrotMavenCentral"
+            }
+        }
+        mavenCentral()
+    }
+    dependencies {
+        classpath(group: 'com.android.tools.build', name: 'gradle', version: androidPluginVersion)
+    }
+}
+
+if (project == rootProject) {
+    File localGradleProperties = new File(rootDir, 'local.gradle.properties')
+    if (localGradleProperties.exists()) {
+        Properties props = new Properties()
+        props.load(localGradleProperties.newDataInputStream())
+        props.stringPropertyNames().each { name ->
+            allprojects { proj ->
+                proj.ext[name] = props[name]
+            }
+        }
+    }
+
+    apply from: new File([rootDir, 'gradle', "common.gradle"].join(File.separator))
+    apply from: new File([rootDir, 'gradle', "upload.gradle"].join(File.separator))
+    apply from: new File([rootDir, 'gradle', "android.gradle"].join(File.separator))
+    apply from: new File([rootDir, 'gradle', "police.gradle"].join(File.separator))
+    apply from: new File([rootDir, 'gradle', "empty.gradle"].join(File.separator))
+
+    gradle.projectsEvaluated {
+        tasks.withType(JavaCompile) {
+            options.compilerArgs << "-Xlint:all"
+        }
+    }
+
+    task wrapper(type: Wrapper) {
+        gradleVersion = gradleVersion
+    }
+}
+// -- END rootProject Part --
+
+// -- build project Part --
+apply plugin: 'com.android.library'
+
+rootProject.commonConfiguration(project)
+rootProject.deployConfiguration(project)
+rootProject.uploadConfiguration(project)
+rootProject.androidConfiguration(project)
+rootProject.docConfiguration(project)
+
+project.isLibProject()
+
+android {
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = ['src']
+            resources.srcDirs = ['src']
+            aidl.srcDirs = ['src']
+            renderscript.srcDirs = ['src']
+            res.srcDirs = ['res']
+            assets.srcDirs = ['assets']
+            jni.srcDirs = ['jni']
+        }
+
+        instrumentTest.setRoot('tests')
+    }
+
+    defaultConfig.ndk {
+        moduleName "libobus-jni"
+        ldLibs "log"
+        abiFilter "armeabi armeabi-v7a x86"
+    }
+}
+
+rootProject.policeConfiguration(project)
+
+gradle.taskGraph.whenReady { taskGraph ->
+    android.libraryVariants.all { variant ->
+        if (taskGraph.hasTask(variant.assemble)) {
+            artifacts {
+                privates new DefaultPublishArtifact(project.name, "aar", "aar", variant.name, new Date(), file(variant.outputs.get(0).outputFile))
+            }
+        }
+    }
+}
+// -- END build project Part --

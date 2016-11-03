@@ -1,0 +1,34 @@
+# eclipse projects
+.pydevproject
+.cproject
+.project
+.settings/
+# idea projects
+.gradle
+.idea
+*.iml
+
+# java output directories
+bin/
+gen/
+libs/
+obj/
+java/build
+local.gradle.properties
+
+# ant locol properties
+local.properties
+
+# backup files
+*~
+*.swp
+
+# python files
+*.pyc
+*.pyo
+
+# compiled files
+*.o
+*.d
+*.so
+

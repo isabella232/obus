@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="custom_rules" default="-pre-build">
+
+    <property file="local.properties" />
+
+    <!-- stuf related to libobus-jni.so -->
+    <property environment="env" />
+        <condition property="ndk.dir" value="${env.ANDROID_NDK_ROOT}">
+        <isset property="env.ANDROID_NDK_ROOT" />
+    </condition>
+
+    <!-- quick check on ndk.dir -->
+    <fail
+            message="ndk.dir is missing. inject it through the ANDROID_NDK_ROOT environment variable."
+            unless="ndk.dir"
+    />
+
+    <target name="-pre-build">
+        <echo message="Compile libobus-jni.so with Android NDK ..." />
+        <exec executable="${ndk.dir}/ndk-build" failonerror="true" />
+    </target>
+
+    <target name="clean" depends="android_rules.clean">
+        <exec executable="${ndk.dir}/ndk-build" failonerror="true" >
+           <arg value="clean"/>
+        </exec>
+    </target>
+
+</project>

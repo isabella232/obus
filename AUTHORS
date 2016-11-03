@@ -1,0 +1,12 @@
+List of the main authors of code contained in obus.
+
+Jean-Baptiste Dubois <jean-baptiste.dubois@parrot.com>
+	Original author & maintainer
+
+Yves-Marie Morgan <yves-marie.morgan@parrot.com>
+	Implementation of obus python binding
+	Implementation of obus java binding
+
+Nicloas Christe <nicolas.christe@parrot.com>
+	Implementation of obus java binding
+

@@ -1,0 +1,76 @@
+rootProject.ext['uploadConfiguration'] = { project ->
+    // -- define artifactory repositories to upload if needed --
+    project.tasks.create(name: "configureUploadRepositories") << {
+        if (rootProject.hasProperty('artifactory_user') && rootProject.hasProperty('artifactory_password')) {
+            project.ext['_publicrepos'] = {
+                if (version.contains('SNAPSHOT')) {
+                    url "http://phoenix.parrot.biz:1185/artifactory/${publicSnapshotMavenId}"
+                } else {
+                    url "http://phoenix.parrot.biz:1185/artifactory/${publicReleaseMavenId}"
+                }
+                credentials {
+                    username "${rootProject.artifactory_user}"
+                    password "${rootProject.artifactory_password}"
+                }
+                layout "maven"
+            }
+            project.ext['_privaterepos'] = {
+                if (version.contains('SNAPSHOT')) {
+                    url "http://phoenix.parrot.biz:1185/artifactory/${privateSnapshotMavenId}"
+                } else {
+                    url "http://phoenix.parrot.biz:1185/artifactory/${privateReleaseMavenId}"
+                }
+                credentials {
+                    username "${rootProject.artifactory_user}"
+                    password "${rootProject.artifactory_password}"
+                }
+                layout "maven"
+            }
+        } else {
+            throw new InvalidUserDataException('You need to define artifactory_user and artifactory_password to enable upload on artifactory')
+        }
+    }
+    // -- END define artifactory repositories to upload if needed --
+
+    // -- Group public configurations in order not to upload several times the same files.
+    project.configurations {
+        uploadPublics {
+            extendsFrom project.configurations.publics
+            extendsFrom project.configurations.packages
+            extendsFrom project.configurations.libSdks
+            extendsFrom project.configurations.demoSdks
+        }
+        uploadPrivates {
+            extendsFrom project.configurations.privates
+        }
+    }
+    // -- END Group public configurations in order not to upload several times the same files.
+
+    // -- define upload tasks --
+    project.tasks.create(name: "uploadPublicsOnArtifactory", type: Upload) {
+        configuration = project.configurations.uploadPublics
+        uploadDescriptor = true
+        dependsOn project.configureUploadRepositories
+    }
+    project.uploadPublicsOnArtifactory.doFirst {
+        repositories {
+            ivy project._publicrepos
+        }
+    }
+    project.tasks.create(name: "uploadPrivatesOnArtifactory", type: Upload) {
+        configuration = project.configurations.uploadPrivates
+        uploadDescriptor = true
+        dependsOn project.configureUploadRepositories
+    }
+    project.uploadPrivatesOnArtifactory.doFirst {
+        repositories {
+            ivy project._privaterepos
+        }
+    }
+    project.tasks.create(name: "uploadAll") {
+        dependsOn project.uploadPublicsOnArtifactory
+        dependsOn project.uploadPrivatesOnArtifactory
+        description "Uploads packages/sdks/publics/privates configurations to artifactory"
+    }
+    // -- END define upload tasks --
+}

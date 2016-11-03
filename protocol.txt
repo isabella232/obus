@@ -1,0 +1,160 @@
+ ********** primitive data types
+bool
+u8, u16, u32, u64
+s8, s16, s32, s64
+enum
+string
+
+all numbers are sent in big endian order
+an enum is cast to and sent as a u32
+a bool are normalized to [[0; 1]] and sent as a u8
+if signed, the integers are cast to and sent as their unsigned counterpart
+all primitive data types can be used in an array
+
+ ********** enumerated packet fields
+
+ * packet types :
+
++-----------+---------------------+-------+--------+
+| packet    | name                | value | from   |
++-----------+---------------------+-------+--------+
+| CONREQ    | connection request  | 0     | client |
+| CONRESP   | connection response | 1     | server |
+| ADD       | add object          | 2     | server |
+| REMOVE    | remove object       | 3     | server |
+| EVENT     | object event        | 4     | server |
+| CALL      | method call         | 5     | client |
+| ACK       | call acknowledgment | 6     | server |
+| BUS_EVENT | bus event           | 7     | server |
++-----------+---------------------+-------+--------+
+
+ * CONRESP statuses :
+
++----------+-------+
+| status   | value |
++----------+-------+
+| ACCEPTED | 0     |
+| REFUSED  | 1     |
++----------+-------+
+
+ * data types :
+
++----------------+----------------+
+| simple field   | array field    |
++--------+-------+--------+-------+
+| type   | value | type   | value |
++--------+-------+--------+-------+
+| u8     | 0x00  | u8     | 0x80  |
+| i8     | 0x01  | i8     | 0x81  |
+| u16    | 0x02  | u16    | 0x82  |
+| i16    | 0x03  | i16    | 0x83  |
+| u32    | 0x04  | u32    | 0x84  |
+| i32    | 0x05  | i32    | 0x85  |
+| u64    | 0x06  | u64    | 0x86  |
+| i64    | 0x07  | i64    | 0x87  |
+| enum   | 0x08  | enum   | 0x88  |
+| string | 0x09  | string | 0x89  |
+| bool   | 0x0a  | bool   | 0x8a  |
++--------+-------+--------+-------+
+note : an array field type is a primitive type with it's high bit set
+
+ ********** packets
+
++------------------------------------------------------------------+
+| CONREQ                                                           |
++--------+------------------+----------+-------------+-------------+
+| header | protocol version | bus name | bus api crc | client name |
+| 9B     | u8               | string   | u32         | string      |
++--------+------------------+----------+-------------+-------------+
+
++---------------------------------------------------------------------------+
+| CONRESP                                                                   |
++--------+----------------------------+------------+------------------------+
+| header | connection response status | nb_objects | objects                |
+| 9B     | u8                         | u32        | nb_objects object adds |
++--------+----------------------------+------------+------------------------+
+
++------------------------------------+
+| ADD                                |
++--------+-----+--------+------------+
+| header | uid | handle | object     |
+| 9B     | u16 | u16    | object add |
++--------+-----+--------+------------+
+
++------------------------+
+| REMOVE                 |
++--------+---------------+
+| header | object remove |
+| 9B     |               |
++--------+---------------+
+
++-------------------------------------+-------+
+| EVENT                               |       |
++--------+------------+---------------+-------+
+| header | object uid | object handle | event |
+| 9B     | u16        | u16           |       |
++--------+------------+---------------+-------+
+
++---------------------------------------------------------------------------------------------------------------------------------------+
+| BUS EVENT                                                                                                                             |
++--------+-----------+---------+------------+---------------+---------------------+---------------------------+-------------------------+
+| header | event uid | nb_adds | nb_removes | nb_obj_events | adds                | removes                   | events                  |
+| 9B     | u16       | u32     | u32        | u32           | nb_adds object adds | nb_removes object removes | nb_events object events |
++--------+-----------+---------+------------+---------------+---------------------+---------------------------+-------------------------+
+
++-----------------------------------------+
+| header (9)                              |
++--------------------+-------------+------+
+|  magic             | packet size | type |
+|  'o' 'b' 'u' 's'   | u32         | u8   |
++--------------------+-------------+------+
+
++-----------------------------------+
+| object add                        |
++-----+--------+-----------+--------+
+| uid | handle | data size | struct |
+| u16 | u16    | u32       |        |
++-----+--------+-----------+--------+
+note : only the needed fields are encoded
+
++---------------+
+| object remove |
++-----+---------+
+| uid | handle  |
+| u16 | u16     |
++-----+---------+
+
++------------------------------------------------+
+| field                                          |
++-----+-----------+------------------------------+
+| uid | data type | datum                        |
+| u16 | u8        | primitive data type or array |
++-----+-----------+------------------------------+
+
++--------------------------------+
+| array                          |
++----------+---------------------+
+| nb_items | value               |
+| u32      | primitive data type |
++----------+---------------------+
+
++--------------------------------+
+| event                          |
++-----------+-----------+--------+
+| event uid | data size | struct |
+| u16       | u32       |        |
++-----------+-----------+--------+
+
++------------------------------+
+| struct                       |
++-----------+------------------+
+| nb_fields | fields           |
+| u16       | nb_fields fields |
++-----------+------------------+
+
++------------------------------------------+
+| string                                   |
++-----------+------------------------------+
+| size      | bytes                        |
+| u32       | string byte with room for \0 |
++-----------+------------------------------+

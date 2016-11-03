@@ -1,0 +1,86 @@
+public class PoliceTask extends DefaultTask {
+    private Project project
+    private File policeDir
+    private File policeFile
+    private ArrayList<File> depsList = []
+
+    public void setProjectObject(Project project) {
+        this.project = project
+    }
+
+    public void setVariantObject(variant) {
+        this.policeDir = variant.outputs.get(0).outputFile.parentFile
+        this.policeFile = new File(this.policeDir, "${variant.outputs.get(0).outputFile.name}.police.deps")
+        this.addDependencies(variant.javaCompile.source)
+        def dep = variant.getVariantData().getVariantDependency()
+        for (conf in [dep.compileConfiguration, dep.packageConfiguration, dep.publishConfiguration]) {
+            if (conf != null) {
+                this.addDependencies(conf)
+            }
+        }
+        if (variant.hasProperty('packageLibrary')) {
+            variant.outputs.get(0).packageLibrary.dependsOn(this)
+        } else if (variant.hasProperty('packageApplication')) {
+            variant.outputs.get(0).packageApplication.dependsOn(this)
+        } else {
+            variant.assemble.dependsOn(this)
+        }
+    }
+
+    private void addDependency(String dependency) {
+        this.addDependency(new File(dependency))
+    }
+
+    private void addDependency(File dependency) {
+        if (!(dependency in this.depsList)) {
+            this.depsList.add(dependency)
+        }
+    }
+
+    private void addDependencies(FileCollection dependencies) {
+        for(dep in dependencies) {
+            this.addDependency(dep)
+        }
+    }
+
+    private void addDependencies(Configuration conf) {
+        for (file in conf) {
+            this.addDependency(file)
+        }
+    }
+
+    public File getOutputFile() {
+        return this.policeFile
+    }
+
+    @TaskAction
+    public void createFile() {
+        this.policeDir.mkdirs()
+        this.policeFile.write(depsList.join('\n'))
+    }
+}
+
+def handleVariant(variant, project) {
+    // Create associated police task
+    def policeTask = project.tasks.create(name: "Create${variant.name.capitalize()}PoliceFile", type: PoliceTask) {
+        projectObject project
+        variantObject variant
+    }
+    project.policeTasks[variant.name] = policeTask
+}
+
+rootProject.ext['policeConfiguration'] = { project ->
+    project.ext["policeTasks"] = [:]
+
+    if (project.plugins.hasPlugin('com.android.application')) {
+        project.android.applicationVariants.all { variant ->
+            handleVariant(variant, project)
+        }
+    }
+
+    if (project.plugins.hasPlugin('com.android.library')) {
+        project.android.libraryVariants.all { variant ->
+            handleVariant(variant, project)
+        }
+    }
+}

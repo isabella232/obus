@@ -1,0 +1,42 @@
+obus - linux interprocess objects synchronization protocol.
+Copyright 2013 Parrot SA.
+
+C Installation - Linux
+=======================
+
+To build and install the C obus runtime execute the following:
+
+  $ ./configure
+  $ make
+  $ make check
+  $ make install
+
+
+If "make check" fails, you can still install, but it is likely that
+some features of this library will not work correctly on your system.
+Proceed at your own risk.
+
+"make install" may require superuser privileges.
+
+obus generator (obusgen)
+=======================
+obus generator (obusgen) generates c or java sources files from obus bus description xml file.
+Generator is located at obus/src/obusgen/obusgen.py.
+
+obus subdirectories description
+============================
+
+obus                           obus top directory
+  |
+  +-src/                       obus common sources
+  |  |
+  |  +-libobus/                obus c library sources
+  |  |
+  |  +-obusgen/                obus code generator sources (written in python)
+  |
+  +-python/                    obus python binding
+  |
+  +-java/                      obus android binding (not pure java !)
+  |
+  +-examples/                  obus bus examples
+

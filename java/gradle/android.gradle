@@ -1,0 +1,150 @@
+rootProject.ext['serials'] = []
+if (rootProject.hasProperty('s')) {
+    def givenSerials = rootProject.s.split(',')
+    for (serial in givenSerials) {
+        rootProject.serials += serial
+    }
+}
+
+buildscript {
+    repositories {
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+        classpath(group: 'com.android.tools.build', name: 'gradle', version: androidPluginVersion)
+    }
+}
+
+import com.android.builder.testing.ConnectedDevice;
+import com.android.builder.testing.api.DeviceProvider;
+import com.android.builder.testing.api.DeviceConnector;
+import com.android.builder.testing.api.DeviceException;
+import com.android.ddmlib.AndroidDebugBridge;
+import com.android.ddmlib.IDevice;
+
+public class UniqueDeviceProvider extends DeviceProvider {
+    private final String deviceId;
+
+    private final File adbLocation;
+
+    private final List<ConnectedDevice> selectedDevices = new ArrayList<ConnectedDevice>();
+
+    public UniqueDeviceProvider(File adbLocation, String deviceId) {
+        this.adbLocation = adbLocation
+        this.deviceId = deviceId;
+    }
+
+    @Override
+    public String getName() {
+        return this.deviceId;
+    }
+
+    @Override
+    public List<? extends DeviceConnector> getDevices() {
+        return this.selectedDevices;
+    }
+
+    @Override
+    public void init() throws DeviceException {
+        try {
+            AndroidDebugBridge.initIfNeeded(false /*clientSupport*/);
+
+            AndroidDebugBridge bridge = AndroidDebugBridge.createBridge(
+                    adbLocation.getAbsolutePath(), false /*forceNewBridge*/);
+
+            long timeOut = 30000; // 30 sec
+            int sleepTime = 1000;
+            while (!bridge.hasInitialDeviceList() && timeOut > 0) {
+                Thread.sleep(sleepTime);
+                timeOut -= sleepTime;
+            }
+
+            if (timeOut <= 0 && !bridge.hasInitialDeviceList()) {
+                throw new RuntimeException("Timeout getting device list.", null);
+            }
+
+            IDevice[] devices = bridge.getDevices();
+
+            if (devices.length == 0) {
+                throw new RuntimeException("No connected devices!", null);
+            }
+
+            for (IDevice iDevice : devices) {
+                if (iDevice.getSerialNumber() == this.deviceId) {
+                    this.selectedDevices.add(new ConnectedDevice(iDevice));
+                }
+            }
+
+            if (this.selectedDevices.size() == 0) {
+                throw new RuntimeException("No device found with id " + this.deviceId, null);
+            }
+            if (this.selectedDevices.size() > 1) {
+                throw new RuntimeException("More than one device found with id " + this.deviceId, null);
+            }
+        } catch (Exception e) {
+            throw new DeviceException(e);
+        }
+    }
+
+    @Override
+    public void terminate() throws DeviceException {
+        this.selectedDevices.clear();
+        // nothing to be done here.
+    }
+
+    @Override
+    public int getTimeoutInMs() {
+        return 0;
+    }
+
+    @Override
+    public boolean isConfigured() {
+        return true;
+    }
+}
+
+rootProject.ext['androidConfiguration'] = { project ->
+    project.androidCompileSdkVersion = project.androidCompileSdkVersion as int
+    project.androidMinSdkVersion = project.androidMinSdkVersion as int
+    project.androidTargetSdkVersion = project.androidTargetSdkVersion as int
+    project.androidVersionCode = project.androidVersionCode as int
+
+    if (project.plugins.hasPlugin('com.android.library')) {
+        project.android.publishNonDefault true
+
+        project.android.libraryVariants.all { variant ->
+            // Give aar a proper name right away
+            def newAarName = "${project.name}-${project.version}-${variant.name}.aar"
+            def output = variant.outputs.get(0)
+            output.outputFile = new File(output.outputFile.parentFile, newAarName)
+        }
+    }
+    if (project.plugins.hasPlugin('com.android.application')) {
+        project.android.applicationVariants.all { variant ->
+            // Give apk a proper name right away
+            def newApkName = "${project.name}-${project.version}-${variant.name}.apk"
+            def output = variant.outputs.get(0)
+            output.outputFile = new File(output.outputFile.parentFile, newApkName)
+        }
+    }
+    if (project.plugins.hasPlugin('com.android.application') || project.plugins.hasPlugin('com.android.library')) {
+        project.android.buildToolsVersion project.androidBuildToolsVersion
+        project.android.compileSdkVersion project.androidCompileSdkVersion
+        project.android.defaultConfig {
+            minSdkVersion project.androidMinSdkVersion
+            targetSdkVersion project.androidTargetSdkVersion
+            versionName project.version
+            versionCode project.androidVersionCode
+        }
+        if (project.hasProperty("supportAnnotationsVersion")) {
+            project.dependencies.compile("com.android.support:support-annotations:${project.supportAnnotationsVersion}")
+        }
+        if (project.hasProperty("supportV4Version")) {
+            project.dependencies.compile("com.android.support:support-v4:${project.supportV4Version}")
+        }
+        for (serial in rootProject.serials) {
+            project.android.deviceProvider new UniqueDeviceProvider(project.android.getAdbExe(), serial)
+        }
+    }
+}
